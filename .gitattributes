@@ -1,3 +1,0 @@
-cmu_kitchen_dataset.zip filter=lfs diff=lfs merge=lfs -text
-dhaka_dataset.zip filter=lfs diff=lfs merge=lfs -text
-datasets/iris.zip filter=lfs diff=lfs merge=lfs -text
