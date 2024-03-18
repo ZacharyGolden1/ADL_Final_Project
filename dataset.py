@@ -21,8 +21,7 @@ class AgricultureVisionDataset(VisionDataset):
         self.transform = transform
         self.transforms = transforms
         self.target_transform = target_transform
-
-        self.img_dim = (512, 512)
+        
         self.labels = "double_plant", "nutrient_deficiency", "water", "drydown", \
                      "planter_skip","waterway","endrow","storm_damage", "weed_cluster"
 
