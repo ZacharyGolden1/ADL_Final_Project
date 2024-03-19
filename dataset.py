@@ -1,9 +1,9 @@
 import os
 import pandas as pd
 import torch
-from torchvision.io import read_image
+from torchvision.io import read_image, ImageReadMode
 from torchvision.datasets import VisionDataset
-from torchvision.transforms import Grayscale
+from torchvision.transforms import v2
 from torch.utils.data import DataLoader
 
 
@@ -49,7 +49,7 @@ class AgricultureVisionDataset(VisionDataset):
         labels = torch.stack([item.squeeze() for item in labels])
 
         mask_path = os.path.join(self.masks, self.imgs.iloc[idx, 0] + ".png")
-        mask = read_image(mask_path)
+        mask = read_image(mask_path, ImageReadMode.GRAY)
 
         # mask image
         image = image * mask
@@ -64,10 +64,19 @@ class AgricultureVisionDataset(VisionDataset):
 
 
 if __name__ == "__main__":
-    target_transform = lambda x: Grayscale(1)(x) / 255.0
+    transform = v2.Compose(
+        [v2.ToImage(), v2.ToDtype(torch.float32, scale=True), v2.functional.invert]
+    )
+    target_transform = v2.Compose(
+        [
+            v2.ToImage(),
+            v2.ToDtype(torch.float32, scale=True),
+            lambda x: torch.clamp(x, 0.0, 1.0),
+        ]
+    )
     dataset = AgricultureVisionDataset(
         "./data/Agriculture-Vision-2021/train/",
-        transform=lambda x: (255.0 - x) / 255.0,
+        transform=transform,
         target_transform=target_transform,
     )
     data_loader = DataLoader(dataset, batch_size=4, shuffle=True)

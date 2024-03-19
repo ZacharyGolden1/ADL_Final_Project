@@ -3,7 +3,7 @@
 from dataset import AgricultureVisionDataset
 from torch.utils import data
 from torch.optim import Adam
-from torchvision.transforms import Grayscale
+from torchvision.transforms import v2
 import torch.nn.functional as F
 from pathlib import Path
 import torch
@@ -24,7 +24,7 @@ class Trainer(object):
         model,
         folder,
         *,
-        image_size=512,
+        image_size=128,
         train_batch_size=32,
         train_lr=2e-5,
         train_num_steps=10000,
@@ -34,6 +34,7 @@ class Trainer(object):
         load_path=None,
         shuffle=True,
         device=None,
+        dataset_size=1000,
     ):
         super().__init__()
         self.model = model
@@ -46,22 +47,39 @@ class Trainer(object):
 
         self.train_folder = folder
 
-        target_transform = lambda x: Grayscale(1)(x) / 255.0
-        transform = lambda x: (255.0 - x) / 255.0
+        transform = v2.Compose(
+            [
+                v2.ToImage(),
+                v2.ToDtype(torch.float32, scale=True),
+                v2.functional.invert,
+                v2.Resize(image_size),
+            ]
+        )
+        target_transform = v2.Compose(
+            [
+                v2.ToImage(),
+                v2.ToDtype(torch.float32, scale=True),
+                lambda x: torch.clamp(x, 0.0, 1.0),
+                v2.Resize(image_size),
+            ]
+        )
+
         self.ds = AgricultureVisionDataset(
             folder, transform=transform, target_transform=target_transform
         )
+        self.ds = torch.utils.data.Subset(
+            self.ds,
+            range(0, dataset_size),
+        )
         print(f"dataset length: {len(self.ds)}")
 
-        self.dl = cycle(
-            data.DataLoader(
-                self.ds,
-                batch_size=train_batch_size,
-                shuffle=shuffle,
-                pin_memory=True,
-                # num_workers=0,
-                drop_last=True,
-            )
+        self.dl = data.DataLoader(
+            self.ds,
+            batch_size=train_batch_size,
+            shuffle=shuffle,
+            pin_memory=True,
+            # num_workers=0,
+            drop_last=True,
         )
 
         self.opt = Adam(model.parameters(), lr=train_lr)
@@ -114,22 +132,23 @@ class Trainer(object):
         milestone = 0
         for self.step in tqdm(range(start_step, self.train_num_steps), desc="steps"):
             u_loss = 0
-            for i in range(self.gradient_accumulate_every):
-                img, labels = next(self.dl)
-
+            for i, (img, labels) in enumerate(self.dl):
                 img = img.to(self.device)
-                # TODO: remove this once we begin predicting multiple labels
                 labels = labels.to(self.device)
 
                 pred = self.model(img)
-                breakpoint()
+
+                assert pred.shape == labels.shape
                 loss = F.l1_loss(pred, labels)
 
+                if (i + 1) % 10 == 0:
+                    wandb.log({"loss_during_epoch": loss.item()})
+
                 u_loss += loss.item()
-                (loss / self.gradient_accumulate_every).backward()
+                (loss).backward()
 
             # use wandb to log the loss
-            wandb.log({"loss": u_loss / self.gradient_accumulate_every})
+            wandb.log({"loss_per_epoch": u_loss / len(self.dl.dataset)})
 
             self.opt.step()
             self.opt.zero_grad()
