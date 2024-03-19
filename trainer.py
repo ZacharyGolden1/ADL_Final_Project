@@ -51,7 +51,7 @@ class Trainer(object):
         transform = v2.Compose(
             [
                 v2.ToImage(),
-                v2.ToDtype(torch.float32, scale=True),
+                v2.ToDtype(torch.float16, scale=True),
                 v2.functional.invert,
                 v2.Resize(image_size, antialias=None),
             ]
@@ -59,7 +59,7 @@ class Trainer(object):
         target_transform = v2.Compose(
             [
                 v2.ToImage(),
-                v2.ToDtype(torch.float32, scale=True),
+                v2.ToDtype(torch.float16, scale=True),
                 lambda x: torch.clamp(x, 0.0, 1.0),
                 v2.Resize(image_size, antialias=None),
             ]
