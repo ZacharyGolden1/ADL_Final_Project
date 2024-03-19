@@ -10,8 +10,24 @@ if __name__ == "__main__":
         else "mps" if torch.backends.mps.is_available() else "cpu"
     )
 
+    BATCH_SIZE = 16
+    LR = 2e-5
+    IMAGE_SIZE = 128
+    EPOCHS = 150
+    DATASET_SIZE = 1024
+    TEST = True
+
     wandb.init(
-        project="adl-agriculture-vision-2021",
+        entity="slumba-cmu",
+        project="agriculture-vision-adl",
+        config={
+            "batch size": BATCH_SIZE,
+            "learning rate": LR,
+            "image size": IMAGE_SIZE,
+            "epochs": EPOCHS,
+            "dataset size": DATASET_SIZE,
+            "testing": TEST,
+        },
     )
 
     model = Unet(
@@ -22,14 +38,22 @@ if __name__ == "__main__":
 
     trainer = Trainer(
         model,
-        folder="./data/Agriculture-Vision-2021/train/",
-        image_size=128,
-        train_batch_size=4,
-        train_num_steps=1000,
-        save_every=1000,
+        folder="./data/Agriculture-Vision-2021",
+        image_size=IMAGE_SIZE,
+        train_batch_size=BATCH_SIZE,
+        train_lr=LR,
+        train_num_steps=EPOCHS,
+        save_every=25,
         results_folder="./results/baseline",
         device=device,
+        dataset_size=DATASET_SIZE,
+        # Add this while testing
+        load_path="./results/baseline/model.pt" if TEST else None,
     )
 
-    print("beginning training...")
-    trainer.train()
+    if not TEST:
+        print(f"beginning training on {device}...")
+        trainer.train()
+    else:
+        print("testing...")
+        trainer.test()

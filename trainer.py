@@ -45,14 +45,15 @@ class Trainer(object):
         self.train_num_steps = train_num_steps
         self.save_every = save_every
 
-        self.train_folder = folder
+        self.train_folder = os.path.join(folder, "train")
+        self.val_folder = os.path.join(folder, "val")
 
         transform = v2.Compose(
             [
                 v2.ToImage(),
                 v2.ToDtype(torch.float32, scale=True),
                 v2.functional.invert,
-                v2.Resize(image_size),
+                v2.Resize(image_size, antialias=None),
             ]
         )
         target_transform = v2.Compose(
@@ -60,12 +61,12 @@ class Trainer(object):
                 v2.ToImage(),
                 v2.ToDtype(torch.float32, scale=True),
                 lambda x: torch.clamp(x, 0.0, 1.0),
-                v2.Resize(image_size),
+                v2.Resize(image_size, antialias=None),
             ]
         )
 
         self.ds = AgricultureVisionDataset(
-            folder, transform=transform, target_transform=target_transform
+            self.train_folder, transform=transform, target_transform=target_transform
         )
         self.ds = torch.utils.data.Subset(
             self.ds,
@@ -79,6 +80,23 @@ class Trainer(object):
             shuffle=shuffle,
             pin_memory=True,
             # num_workers=0,
+            drop_last=True,
+        )
+
+        self.val_ds = AgricultureVisionDataset(
+            self.train_folder,
+            transform=transform,  # This is an unusual value!
+            target_transform=target_transform,
+        )
+        self.val_ds = torch.utils.data.Subset(
+            self.val_ds, range(dataset_size, 2 * dataset_size)
+        )
+
+        self.val_dl = data.DataLoader(
+            self.val_ds,
+            batch_size=4,
+            shuffle=shuffle,
+            pin_memory=True,
             drop_last=True,
         )
 
@@ -148,7 +166,9 @@ class Trainer(object):
                 (loss).backward()
 
             # use wandb to log the loss
-            wandb.log({"loss_per_epoch": u_loss / len(self.dl.dataset)})
+            wandb.log(
+                {"loss_per_epoch": u_loss / len(self.dl.dataset) * self.batch_size}
+            )
 
             self.opt.step()
             self.opt.zero_grad()
@@ -162,3 +182,30 @@ class Trainer(object):
                 self.save()
 
         print("training completed")
+
+    def test(self):
+        num_rounds = 5
+
+        with torch.no_grad():
+            for i, (img, labels) in enumerate(self.val_dl):
+                print(torch.max(labels))
+
+                if torch.max(labels) < 1e-13:
+                    continue
+
+                img = img.to(self.device)
+                labels = labels.to(self.device)
+
+                pred = self.model(img)
+                loss = F.l1_loss(pred, labels)
+
+                wandb.log(
+                    {
+                        "val_loss_per_batch": loss,
+                        "pred_masks": [wandb.Image(p) for p in pred],
+                        "true_masks": [wandb.Image(p) for p in labels],
+                        "images": [wandb.Image(i) for i in img],
+                    }
+                )
+
+                break
