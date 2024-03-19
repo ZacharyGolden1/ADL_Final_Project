@@ -1,5 +1,5 @@
 # Modified version of the trainer.py file from 10-423 HW2
-
+from time import time
 from dataset import AgricultureVisionDataset
 from torch.utils import data
 from torch.optim import Adam
@@ -51,7 +51,7 @@ class Trainer(object):
         transform = v2.Compose(
             [
                 v2.ToImage(),
-                v2.ToDtype(torch.float16, scale=True),
+                v2.ToDtype(torch.float32, scale=True),
                 v2.functional.invert,
                 v2.Resize(image_size, antialias=None),
             ]
@@ -59,7 +59,7 @@ class Trainer(object):
         target_transform = v2.Compose(
             [
                 v2.ToImage(),
-                v2.ToDtype(torch.float16, scale=True),
+                v2.ToDtype(torch.float32, scale=True),
                 lambda x: torch.clamp(x, 0.0, 1.0),
                 v2.Resize(image_size, antialias=None),
             ]
@@ -147,50 +147,55 @@ class Trainer(object):
                 This loss is the average of the loss over accumulation steps 
             2. Save the model every self.save_and_sample_every steps
         """
-        milestone = 0
         for self.step in tqdm(range(start_step, self.train_num_steps), desc="steps"):
             u_loss = 0
             for i, (img, labels) in enumerate(self.dl):
+                batch_start = time()
                 img = img.to(self.device)
                 labels = labels.to(self.device)
 
                 pred = self.model(img)
-
                 assert pred.shape == labels.shape
+
                 loss = F.l1_loss(pred, labels)
+                u_loss += loss.item()
+
+                back_start = time()
+                (loss).backward()
+                back_time = time() - back_start
+                batch_time = time() - batch_start
 
                 if (i + 1) % 10 == 0:
-                    wandb.log({"loss_during_epoch": loss.item()})
-
-                u_loss += loss.item()
-                (loss).backward()
+                    wandb.log(
+                        {
+                            "loss_during_epoch": loss.item(),
+                            "backprop_time": back_time,
+                            "batch_time": batch_time,
+                        }
+                    )
 
             # use wandb to log the loss
             wandb.log(
-                {"loss_per_epoch": u_loss / len(self.dl.dataset) * self.batch_size}
+                {
+                    "loss_per_epoch": u_loss / len(self.dl.dataset) * self.batch_size,
+                    "epoch": self.step,
+                }
             )
 
             self.opt.step()
             self.opt.zero_grad()
 
             if (self.step + 1) % self.save_every == 0:
-                milestone = self.step // self.save_every
-                save_folder = str(self.results_folder / f"model_{milestone}")
-                if not os.path.exists(save_folder):
-                    os.makedirs(save_folder)
+                self.save(self.step)
 
-                self.save()
-
+        self.save()
         print("training completed")
 
     def test(self):
-        num_rounds = 5
-
         with torch.no_grad():
             for i, (img, labels) in enumerate(self.val_dl):
-                print(torch.max(labels))
-
                 if torch.max(labels) < 1e-13:
+                    # ignore empty masks
                     continue
 
                 img = img.to(self.device)

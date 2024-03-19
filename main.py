@@ -10,12 +10,12 @@ if __name__ == "__main__":
         else "mps" if torch.backends.mps.is_available() else "cpu"
     )
 
-    BATCH_SIZE = 16
+    BATCH_SIZE = 8
     LR = 2e-5
     IMAGE_SIZE = 128
     EPOCHS = 150
     DATASET_SIZE = 1024
-    TEST = True
+    TEST = False
 
     wandb.init(
         entity="slumba-cmu",
