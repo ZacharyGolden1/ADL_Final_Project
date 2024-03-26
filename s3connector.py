@@ -3,20 +3,21 @@ from PIL import Image
 import torchvision
 
 DATASET_URI = (
-    # "s3://intelinair-data-releases/agriculture-vision/cvpr_challenge_2021/supervised/"
-    "s3://adl-agriculture-vision-2021"
+    "s3://intelinair-data-releases/agriculture-vision/cvpr_challenge_2021/raw/"
+    # "s3://adl-agriculture-vision-2021"
 )
-REGION = "us-east-2"
+REGION = "us-east-1"
 
 
 def load_image(object):
     img = Image.open(object)
-    img.show()
+    # img.show()
     return (object.key, torchvision.transforms.functional.pil_to_tensor(img))
 
 
 iterable_dataset = S3IterableDataset.from_prefix(
-    DATASET_URI + "/train/images", region=REGION, transform=load_image
+    # DATASET_URI + "/train/images", region=REGION, transform=load_image
+    DATASET_URI, region=REGION, transform=load_image
 )
 
 for key, img in iterable_dataset:
