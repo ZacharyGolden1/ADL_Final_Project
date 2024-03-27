@@ -2,11 +2,18 @@ from s3torchconnector import S3MapDataset, S3IterableDataset
 from PIL import Image
 import torchvision
 
-DATASET_URI = (
-    "s3://intelinair-data-releases/agriculture-vision/cvpr_challenge_2021/raw/"
-    # "s3://adl-agriculture-vision-2021"
-)
-REGION = "us-east-1"
+SSPT = True
+
+if SSPT:
+    DATASET_URI = (
+        "s3://intelinair-data-releases/agriculture-vision/cvpr_challenge_2021/raw/"
+    )
+    REGION = "us-east-1"
+else:
+    DATASET_URI = (
+        "s3://adl-agriculture-vision-2021"
+    )
+    REGION = "us-east-2"
 
 
 def load_image(object):
