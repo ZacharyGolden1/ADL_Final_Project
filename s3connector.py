@@ -2,6 +2,7 @@ from s3torchconnector import S3MapDataset, S3IterableDataset
 from PIL import Image
 import torchvision
 
+# Self Supervised Pretraining
 SSPT = True
 
 if SSPT:
