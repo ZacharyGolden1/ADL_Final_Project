@@ -1,20 +1,36 @@
 from s3torchconnector import S3MapDataset, S3IterableDataset
-import torch
+from PIL import Image
+import torchvision
 
-DATASET_URI = (
-    # "s3://intelinair-data-releases/agriculture-vision/cvpr_challenge_2021/supervised/"
-    "s3://adl-agriculture-vision-2021"
-)
-REGION = "us-east-2"
+# Self Supervised Pretraining
+SSPT = True
+
+if SSPT:
+    DATASET_URI = (
+        "s3://intelinair-data-releases/agriculture-vision/cvpr_challenge_2021/raw/"
+    )
+    REGION = "us-east-1"
+else:
+    DATASET_URI = "s3://adl-agriculture-vision-2021"
+    REGION = "us-east-2"
+
+
+def load_image(object):
+    img = Image.open(object)
+    # img.show()
+    return (object.key, torchvision.transforms.functional.pil_to_tensor(img))
+
 
 iterable_dataset = S3IterableDataset.from_prefix(
-    DATASET_URI + "/train/images", region=REGION
+    # DATASET_URI + "/train/images", region=REGION, transform=load_image
+    DATASET_URI,
+    region=REGION,
+    transform=load_image,
 )
 
-# Datasets are also iterators.
-for item in iterable_dataset:
-    print(item.key)
-    content = item.read()
+for key, img in iterable_dataset:
+    key, img = next(iter(iterable_dataset))
+    print(img.shape)
 
 """
 # S3MapDataset eagerly lists all the objects under the given prefix
