@@ -325,6 +325,9 @@ class Unet(nn.Module):
         self.final_res_block = block_class(dim * 2, dim, time_emb_dim=time_dim)
         self.final_conv = nn.Conv2d(dim, self.out_dim, 1)
 
+        # Sigmoid to push the output to [0, 1]
+        self.sigmoid = nn.Sigmoid()
+
     def forward(self, x):
         x = self.init_conv(x)
         r = x.clone()
@@ -358,4 +361,6 @@ class Unet(nn.Module):
         x = torch.cat((x, r), dim=1)
 
         x = self.final_res_block(x)
-        return self.final_conv(x)
+        x = self.final_conv(x)
+
+        return self.sigmoid(x)

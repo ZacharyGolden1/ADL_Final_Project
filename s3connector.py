@@ -11,9 +11,7 @@ if SSPT:
     )
     REGION = "us-east-1"
 else:
-    DATASET_URI = (
-        "s3://adl-agriculture-vision-2021"
-    )
+    DATASET_URI = "s3://adl-agriculture-vision-2021"
     REGION = "us-east-2"
 
 
@@ -25,7 +23,9 @@ def load_image(object):
 
 iterable_dataset = S3IterableDataset.from_prefix(
     # DATASET_URI + "/train/images", region=REGION, transform=load_image
-    DATASET_URI, region=REGION, transform=load_image
+    DATASET_URI,
+    region=REGION,
+    transform=load_image,
 )
 
 for key, img in iterable_dataset:
