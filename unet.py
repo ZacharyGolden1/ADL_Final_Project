@@ -231,6 +231,13 @@ class Attention(nn.Module):
         out = rearrange(out, "b h (x y) d -> b (h d) x y", x=h, y=w)
         return self.to_out(out)
 
+# Loss
+def my_loss(output, target):
+    # L1 loss with ratios
+        # check where the target comes from and see what the ratio is for that 
+        # class
+    loss = torch.mean((output - target))
+    return loss
 
 # model
 class Unet(nn.Module):
