@@ -1,0 +1,7 @@
+script to download data from AWS
+
+better loss functions
+    script to count yes-instances for a given label
+
+wandb logging
+save every n time steps
