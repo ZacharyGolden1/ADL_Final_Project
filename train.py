@@ -53,13 +53,17 @@ def main():
 
     args = parser.parse_args()
 
-    print(args)
+    print("Arguments")
+    for arg in vars(args):
+        print(f"{arg}: {getattr(args, arg)}")
 
     device = (
         "cuda"
         if torch.cuda.is_available()
         else "mps" if torch.backends.mps.is_available() else "cpu"
     )
+    print("device:", device)
+    print()
 
     img_transform = v2.Compose(
         [
@@ -98,7 +102,7 @@ def main():
         model.load_state_dict(torch.load(args.load_path))
 
     # Set loss and optimizer
-    loss_fn = torch.nn.CrossEntropyLoss()
+    loss_fn = torch.nn.L1Loss()
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 
     # Start training with help from engine.py
