@@ -30,7 +30,7 @@ iterable_dataset = S3IterableDataset.from_prefix(
 
 for key, img in iterable_dataset:
     key, img = next(iter(iterable_dataset))
-    print(img.shape)
+    print(img.shape, key)
 
 """
 # S3MapDataset eagerly lists all the objects under the given prefix

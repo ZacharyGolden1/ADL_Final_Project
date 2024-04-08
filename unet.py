@@ -232,7 +232,7 @@ class Attention(nn.Module):
         return self.to_out(out)
 
 # Loss
-def my_loss(output, target):
+def custom_l1_loss(output, target):
     # L1 loss with ratios
         # check where the target comes from and see what the ratio is for that 
         # class
