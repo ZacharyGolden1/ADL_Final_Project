@@ -233,6 +233,28 @@ class Attention(nn.Module):
 
 # Loss
 def custom_l1_loss(output, target):
+    val_masks = {
+        'endrow': [1755, 18334], 
+        'water': [987, 18334], 
+        'waterway': [696, 18334], 
+        'double_plant': [2322, 18334], 
+        'drydown': [5800, 18334], 
+        'storm_damage': [89, 18334], 
+        'nutrient_deficiency': [3883, 18334], 
+        'planter_skip': [1197, 18334], 
+        'weed_cluster': [2834, 18334]
+        }
+    train_masks = {
+        'endrow': [4481, 56944], 
+        'water': [2155, 56944], 
+        'waterway': [3899, 56944], 
+        'double_plant': [6234, 56944], 
+        'drydown': [16806, 56944], 
+        'storm_damage': [356, 56944], 
+        'nutrient_deficiency': [13308, 56944], 
+        'planter_skip': [2599, 56944], 
+        'weed_cluster': [11111, 56944]
+        }
     # L1 loss with ratios
         # check where the target comes from and see what the ratio is for that 
         # class
