@@ -232,7 +232,8 @@ class Attention(nn.Module):
         return self.to_out(out)
 
 # Loss
-def custom_l1_loss(output, target):
+def weighted_l1_loss(pred, labels):
+    # ratio of images with non-zero pixels
     val_masks = {
         'endrow': [1755, 18334], 
         'water': [987, 18334], 
@@ -243,7 +244,7 @@ def custom_l1_loss(output, target):
         'nutrient_deficiency': [3883, 18334], 
         'planter_skip': [1197, 18334], 
         'weed_cluster': [2834, 18334]
-        }
+    }
     train_masks = {
         'endrow': [4481, 56944], 
         'water': [2155, 56944], 
@@ -254,12 +255,64 @@ def custom_l1_loss(output, target):
         'nutrient_deficiency': [13308, 56944], 
         'planter_skip': [2599, 56944], 
         'weed_cluster': [11111, 56944]
-        }
+    }
+    train_ratios = {
+        'endrow': 0.07869134588367518, 
+        'water': 0.037844197808373135, 
+        'waterway': 0.06847077830851363, 
+        'double_plant': 0.10947597639786456, 
+        'drydown': 0.29513205956729416, 
+        'storm_damage': 0.00625175611126721, 
+        'nutrient_deficiency': 0.23370328744029223, 
+        'planter_skip': 0.045641331834785054, 
+        'weed_cluster': 0.19512152289969092
+    }
+    # ratio of black to white pixels in the labels
+    val_masks = {
+        'drydown': [674846434, 4806148096], 
+        'weed_cluster': [201170131, 4806148096], 
+        'waterway': [20129377, 4806148096], 
+        'endrow': [60007223, 4806148096], 
+        'planter_skip': [10885482, 4806148096], 
+        'nutrient_deficiency': [343483024, 4806148096], 
+        'double_plant': [44044947, 4806148096], 
+        'storm_damage': [4224793, 4806148096], 
+        'water': [74630112, 4806148096]
+    }
+    train_masks = {
+        'drydown': [1838660590, 14927527936], 
+        'weed_cluster': [921419728, 14927527936], 
+        'waterway': [141159490, 14927527936], 
+        'endrow': [135527899, 14927527936], 
+        'planter_skip': [28304311, 14927527936], 
+        'nutrient_deficiency': [1108061290, 14927527936], 
+        'double_plant': [126330289, 14927527936], 
+        'storm_damage': [27771992, 14927527936], 
+        'water': [149637355, 14927527936]
+    }
+    train_ratios = {
+        'drydown': 0.12317247690863742, 
+        'weed_cluster': 0.061726210257349874, 
+        'waterway': 0.009456320604805063, 
+        'endrow': 0.009079058473784792, 
+        'planter_skip': 0.001896115091618074, 
+        'nutrient_deficiency': 0.07422938980591301, 
+        'double_plant': 0.008462907558547275, 
+        'storm_damage': 0.0018604548669457603, 
+        'water': 0.010024255566062403
+    }
+    # adds up to 1.070332256251756
     # L1 loss with ratios
         # check where the target comes from and see what the ratio is for that 
         # class
-    loss = torch.mean((output - target))
-    return loss
+    drydown_ratio = train_ratios["drydown"]
+    
+    mask = torch.max(labels, dim=1, keepdim=True)[0] > 0
+    loss_non_zero = torch.mean((1 / drydown_ratio) * torch.abs(pred - labels), dim=1)
+    loss_zero = torch.mean((1 / (1 - drydown_ratio)) * torch.abs(pred - labels), dim=1)
+    loss = torch.where(mask.squeeze(), loss_non_zero, loss_zero)
+    
+    return torch.mean(loss)
 
 # model
 class Unet(nn.Module):
@@ -393,3 +446,30 @@ class Unet(nn.Module):
         x = self.final_conv(x)
 
         return self.sigmoid(x)
+
+import torch
+from torchvision.transforms import v2
+from torch.utils.data import DataLoader
+from dataset import AgricultureVisionDataset
+if __name__ == "__main__":
+    transform = v2.Compose(
+        [v2.ToImage(), v2.ToDtype(torch.float32, scale=True), v2.functional.invert]
+    )
+    target_transform = v2.Compose(
+        [
+            v2.ToImage(),
+            v2.ToDtype(torch.float32, scale=True),
+            lambda x: torch.clamp(x, 0.0, 1.0),
+        ]
+    )
+    dataset = AgricultureVisionDataset(
+        "./data/Agriculture-Vision-2021/train/",
+        transform=transform,
+        target_transform=target_transform,
+    )
+    data_loader = DataLoader(dataset, batch_size=4, shuffle=True)
+    imgs, labels = next(iter(data_loader))
+
+    pred = torch.randint(0, 2, size=(1, 128, 128))
+    print("standard l1 loss:", F.l1_loss(pred,labels))
+    print("weighted l1 loss:", weighted_l1_loss(pred, labels))
