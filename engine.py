@@ -3,6 +3,7 @@ Helper functions for training and testing the model
 """
 
 from typing import Tuple, Dict, List
+from time import time
 import torch
 from tqdm import tqdm
 import wandb
@@ -26,6 +27,7 @@ def train_step(
     train_loss, train_acc = 0.0, 0.0
 
     for batch, (images, labels) in enumerate(dataloader):
+        batch_start = time()
         images, labels = images.to(device), labels.to(device)
 
         outputs = model(images)
@@ -36,8 +38,21 @@ def train_step(
             train_acc += acc.item()
 
         optimizer.zero_grad()
+        back_start = time()
         loss.backward()
+        back_time = time() - back_start
+        batch_time = time() - batch_start
         optimizer.step()
+
+        # log within batch loss
+        if (i + 1) % 10 == 0:
+            wandb.log(
+                {
+                    "loss_during_epoch": loss.item(),
+                    "backprop_time": back_time,
+                    "batch_time": batch_time,
+                }
+            )
 
         train_loss += loss.item()
 
