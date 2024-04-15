@@ -4,7 +4,7 @@ Trains a PyTorch image classification model using device-agnostic code.
 
 import os
 import torch
-import data_setup, engine, utils
+import data_setup, engine, utils, loss
 from unet import Unet
 import argparse
 
@@ -103,6 +103,11 @@ def main():
 
     # Set loss and optimizer
     loss_fn = torch.nn.L1Loss()
+    # loss_fn = loss.weighted_l1_loss
+
+    acc_fn = lambda x: 0.0
+    # acc_fn = loss.mIoU
+
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 
     # Start training with help from engine.py
@@ -112,6 +117,7 @@ def main():
         train_dataloader=train_dataloader,
         test_dataloader=test_dataloader,
         loss_fn=loss_fn,
+        acc_fn=acc_fn,
         optimizer=optimizer,
         epochs=args.epochs,
         device=device,
