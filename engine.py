@@ -5,6 +5,7 @@ Helper functions for training and testing the model
 from typing import Tuple, Dict, List
 import torch
 from tqdm import tqdm
+import wandb
 
 
 def train_step(
@@ -16,9 +17,7 @@ def train_step(
     device: torch.device,
 ) -> Tuple[float, float]:
     """
-    One epoch of training
-
-    TODO: accuracy metric
+    One epoch of training. Runs through entire dataset.
 
     Returns: (train_loss, train_accuracy)
     """
@@ -54,8 +53,6 @@ def test_step(
 ) -> Tuple[float, float]:
     """
     One epoch of testing
-
-    TODO: accuracy metric
 
     Returns: (test_loss, test_accuracy)
     """
@@ -115,11 +112,23 @@ def train(
         results["test_loss"].append(test_loss)
         results["test_acc"].append(test_acc)
 
-        # TODO: log to wandb
-
-        print(
-            f"Epoch {epoch + 1}/{epochs} | "
-            f"Train Loss: {train_loss:.4f} | Test Loss: {test_loss:.4f}"
+        wandb.log(
+            {
+                "epoch": epoch + 1,
+                "train_loss": train_loss,
+                "train_acc": train_acc,
+                "test_loss": test_loss,
+                "test_acc": test_acc,
+            }
         )
 
     return results
+
+
+def visualize(
+    model: torch.nn.Module, dataloader: torch.utils.data.DataLoader, device: torch
+):
+    """
+    Visualize outputs of the model
+    """
+    raise NotImplementedError
