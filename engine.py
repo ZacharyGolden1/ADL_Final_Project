@@ -84,6 +84,8 @@ def train(
     optimizer: torch.optim.Optimizer,
     device: torch.device,
     epochs: int,
+    save_every: int,
+    save_dir: str,
 ) -> Dict[str, List[float]]:
     """
     Train and test the model
@@ -121,6 +123,13 @@ def train(
                 "test_acc": test_acc,
             }
         )
+
+        if (epoch + 1) % save_every == 0:
+            utils.save(
+                model=model,
+                target_dir=save_dir,
+                model_name=f"model_{epoch+1}.pt"
+            )
 
     return results
 

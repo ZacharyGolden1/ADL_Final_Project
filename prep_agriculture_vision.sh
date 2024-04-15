@@ -1,4 +1,4 @@
-!#/bin/sh
+#!/bin/sh
 
 cd data/Agriculture-Vision-2021
 

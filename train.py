@@ -40,16 +40,18 @@ def main():
         type=str,
         help="The path to load a pre-trained model.",
     )
-    parser.add_argument("--dataset_size", default=1000, type=int)
+    parser.add_argument("--dataset_size", default=1024, type=int)
     parser.add_argument(
         "--epochs",
-        default=1000,
+        default=50,
         type=int,
         help="The number of iterations for training.",
     )
     parser.add_argument("--image_size", default=128, type=int)
     parser.add_argument("--batch_size", default=32, type=int)
     parser.add_argument("--lr", default=2e-5, type=float)
+    parser.add_argument("--save_every", default=25, type=int)
+
 
     args = parser.parse_args()
 
@@ -132,6 +134,8 @@ def main():
         optimizer=optimizer,
         epochs=args.epochs,
         device=device,
+        save_every=args.save_every,
+        save_dir=args.save_dir,
     )
 
     # Save the model with help from utils.py
