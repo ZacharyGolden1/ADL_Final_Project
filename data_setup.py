@@ -93,6 +93,9 @@ def create_dataloaders(
 ):
     """
     Create dataloaders for the Agriculture Vision dataset.
+
+    # TODO: different dataset sizes for train and test
+
     Returns: train_loader, test_loader
     """
 

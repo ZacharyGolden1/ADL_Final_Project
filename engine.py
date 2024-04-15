@@ -5,19 +5,19 @@ Helper functions for training and testing the model
 from typing import Tuple, Dict, List
 import torch
 from tqdm import tqdm
+import wandb
 
 
 def train_step(
     model: torch.nn.Module,
     dataloader: torch.utils.data.DataLoader,
     loss_fn: torch.nn.Module,
+    acc_fn: torch.nn.Module,
     optimizer: torch.optim.Optimizer,
     device: torch.device,
 ) -> Tuple[float, float]:
     """
-    One epoch of training
-
-    TODO: accuracy metric
+    One epoch of training. Runs through entire dataset.
 
     Returns: (train_loss, train_accuracy)
     """
@@ -30,6 +30,10 @@ def train_step(
 
         outputs = model(images)
         loss = loss_fn(outputs, labels)
+
+        with torch.no_grad():
+            acc = acc_fn(outputs, labels)
+            train_acc += acc.item()
 
         optimizer.zero_grad()
         loss.backward()
@@ -44,12 +48,11 @@ def test_step(
     model: torch.nn.Module,
     dataloader: torch.utils.data.DataLoader,
     loss_fn: torch.nn.Module,
+    acc_fn: torch.nn.Module,
     device: torch.device,
 ) -> Tuple[float, float]:
     """
     One epoch of testing
-
-    TODO: accuracy metric
 
     Returns: (test_loss, test_accuracy)
     """
@@ -62,9 +65,12 @@ def test_step(
             images, labels = images.to(device), labels.to(device)
 
             outputs = model(images)
-            loss = loss_fn(outputs, labels)
 
+            loss = loss_fn(outputs, labels)
             test_loss += loss.item()
+
+            acc = acc_fn(outputs, labels)
+            test_acc += acc.item()
 
     return test_loss / len(dataloader), test_acc / len(dataloader)
 
@@ -74,6 +80,7 @@ def train(
     train_dataloader: torch.utils.data.DataLoader,
     test_dataloader: torch.utils.data.DataLoader,
     loss_fn: torch.nn.Module,
+    acc_fn: torch.nn.Module,
     optimizer: torch.optim.Optimizer,
     device: torch.device,
     epochs: int,
@@ -96,20 +103,32 @@ def train(
 
     for epoch in tqdm(range(epochs)):
         train_loss, train_acc = train_step(
-            model, train_dataloader, loss_fn, optimizer, device
+            model, train_dataloader, loss_fn, acc_fn, optimizer, device
         )
         results["train_loss"].append(train_loss)
         results["train_acc"].append(train_acc)
 
-        test_loss, test_acc = test_step(model, test_dataloader, loss_fn, device)
+        test_loss, test_acc = test_step(model, test_dataloader, loss_fn, acc_fn, device)
         results["test_loss"].append(test_loss)
         results["test_acc"].append(test_acc)
 
-        # TODO: log to wandb
-
-        print(
-            f"Epoch {epoch + 1}/{epochs} | "
-            f"Train Loss: {train_loss:.4f} | Test Loss: {test_loss:.4f}"
+        wandb.log(
+            {
+                "epoch": epoch + 1,
+                "train_loss": train_loss,
+                "train_acc": train_acc,
+                "test_loss": test_loss,
+                "test_acc": test_acc,
+            }
         )
 
     return results
+
+
+def visualize(
+    model: torch.nn.Module, dataloader: torch.utils.data.DataLoader, device: torch
+):
+    """
+    Visualize outputs of the model
+    """
+    raise NotImplementedError

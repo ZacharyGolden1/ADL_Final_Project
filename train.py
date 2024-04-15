@@ -2,11 +2,11 @@
 Trains a PyTorch image classification model using device-agnostic code.
 """
 
-import os
 import torch
-import data_setup, engine, utils
+import data_setup, engine, utils, loss
 from unet import Unet
 import argparse
+import wandb
 
 from torchvision.transforms import v2
 
@@ -103,7 +103,23 @@ def main():
 
     # Set loss and optimizer
     loss_fn = torch.nn.L1Loss()
+    # loss_fn = loss.weighted_l1_loss
+
+    def acc_fn(outputs, labels):
+        return torch.zeros(1)
+
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+
+    # initialize wandb
+    wandb.init(
+        entity="slumba-cmu",
+        project="agriculture-vision-adl",
+        config={
+            "model": model.__class__.__name__,
+            "loss": loss_fn.__class__.__name__,
+            **vars(args),
+        },
+    )
 
     # Start training with help from engine.py
     # TODO: periodically save
@@ -112,6 +128,7 @@ def main():
         train_dataloader=train_dataloader,
         test_dataloader=test_dataloader,
         loss_fn=loss_fn,
+        acc_fn=acc_fn,
         optimizer=optimizer,
         epochs=args.epochs,
         device=device,
