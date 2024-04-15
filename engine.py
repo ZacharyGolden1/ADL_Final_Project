@@ -45,7 +45,7 @@ def train_step(
         optimizer.step()
 
         # log within batch loss
-        if (i + 1) % 10 == 0:
+        if (batch + 1) % 10 == 0:
             wandb.log(
                 {
                     "loss_during_epoch": loss.item(),
