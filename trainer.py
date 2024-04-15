@@ -10,6 +10,7 @@ import torch
 from tqdm import tqdm
 import wandb
 import os
+from unet import weighted_l1_loss
 
 
 def cycle(dl):
@@ -17,6 +18,25 @@ def cycle(dl):
         for data in dl:
             yield data
 
+# accuracy metric
+SMOOTH = 1e-6
+
+def iou_pytorch(outputs: torch.Tensor, labels: torch.Tensor):
+    # You can comment out this line if you are passing tensors of equal shape
+    # But if you are passing output from UNet or something it will most probably
+    # be with the BATCH x 1 x H x W shape
+    # outputs = outputs.squeeze(1)  # BATCH x 1 x H x W => BATCH x H x W
+    # import pdb;pdb.set_trace()
+
+    intersection = (torch.round(outputs).int() & torch.round(labels).int()).float().sum((1, 2)) # Will be zero if Truth=0 or Prediction=0
+    union = (torch.round(outputs).int() | torch.round(labels).int()).float().sum((1, 2))       # Will be zzero if both are 0
+    
+    iou = (intersection + SMOOTH) / (union + SMOOTH)  # We smooth our devision to avoid 0/0
+    
+    thresholded = torch.clamp(20 * (iou - 0.5), 0, 10).ceil() / 10  # This is equal to comparing with thresolds
+    
+    return thresholded  # Or thresholded.mean() if you are interested in average across the batch
+ 
 
 class Trainer(object):
     def __init__(
@@ -28,13 +48,13 @@ class Trainer(object):
         train_batch_size=32,
         train_lr=2e-5,
         train_num_steps=10000,
-        save_every=1000,
+        save_every=25,
         gradient_accumulate_every=2,
         results_folder="./results",
         load_path=None,
         shuffle=True,
         device=None,
-        dataset_size=1000,
+        dataset_size=10000,
     ):
         super().__init__()
         self.model = model
@@ -84,6 +104,7 @@ class Trainer(object):
         )
 
         self.val_ds = AgricultureVisionDataset(
+            # self.val_folder,
             self.train_folder,
             transform=transform,  # This is an unusual value!
             target_transform=target_transform,
@@ -149,6 +170,7 @@ class Trainer(object):
         """
         for self.step in tqdm(range(start_step, self.train_num_steps), desc="steps"):
             u_loss = 0
+            train_iou = 0
             for i, (img, labels) in enumerate(self.dl):
                 batch_start = time()
                 img = img.to(self.device)
@@ -157,8 +179,10 @@ class Trainer(object):
                 pred = self.model(img)
                 assert pred.shape == labels.shape
 
-                loss = F.l1_loss(pred, labels)
+                # loss = F.l1_loss(pred, labels)
+                loss = weighted_l1_loss(pred, labels)
                 u_loss += loss.item()
+                train_iou += iou_pytorch(pred, labels)
 
                 back_start = time()
                 (loss).backward()
@@ -174,13 +198,32 @@ class Trainer(object):
                         }
                     )
 
+            # validation loss/accuracy
+            self.model.eval()
+            val_loss = 0
+            val_iou = 0
+            with torch.no_grad():
+                for img, labels in self.val_dl:
+                    img = img.to(self.device)
+                    labels = labels.to(self.device)
+
+                    pred = self.model(img)
+                    # loss = F.l1_loss(pred, labels)
+                    loss = weighted_l1_loss(pred, labels)
+                    val_iou += iou_pytorch(pred, labels)
+                    val_loss += loss.item()
+
             # use wandb to log the loss
             wandb.log(
                 {
                     "loss_per_epoch": u_loss / len(self.dl.dataset) * self.batch_size,
+                    "val_loss_per_epoch": val_loss / len(self.val_dl.dataset) * self.val_dl.batch_size,
+                    "train_acc_per_epoch": train_iou / len(self.dl.dataset),
+                    "val_acc_per_epoch": val_iou / len(self.val_dl.dataset),
                     "epoch": self.step,
                 }
             )
+
 
             self.opt.step()
             self.opt.zero_grad()

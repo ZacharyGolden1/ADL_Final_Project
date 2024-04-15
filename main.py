@@ -10,11 +10,11 @@ if __name__ == "__main__":
         else "mps" if torch.backends.mps.is_available() else "cpu"
     )
 
-    BATCH_SIZE = 8
+    BATCH_SIZE = 16
     LR = 2e-5
     IMAGE_SIZE = 128
-    EPOCHS = 150
-    DATASET_SIZE = 1024
+    EPOCHS = 100
+    DATASET_SIZE = 10000
     TEST = False
 
     wandb.init(

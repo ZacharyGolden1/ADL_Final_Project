@@ -256,17 +256,17 @@ def weighted_l1_loss(pred, labels):
         'planter_skip': [2599, 56944], 
         'weed_cluster': [11111, 56944]
     }
-    train_ratios = {
-        'endrow': 0.07869134588367518, 
-        'water': 0.037844197808373135, 
-        'waterway': 0.06847077830851363, 
-        'double_plant': 0.10947597639786456, 
-        'drydown': 0.29513205956729416, 
-        'storm_damage': 0.00625175611126721, 
-        'nutrient_deficiency': 0.23370328744029223, 
-        'planter_skip': 0.045641331834785054, 
-        'weed_cluster': 0.19512152289969092
-    }
+    # train_ratios = {
+    #     'endrow': 0.07869134588367518, 
+    #     'water': 0.037844197808373135, 
+    #     'waterway': 0.06847077830851363, 
+    #     'double_plant': 0.10947597639786456, 
+    #     'drydown': 0.29513205956729416, 
+    #     'storm_damage': 0.00625175611126721, 
+    #     'nutrient_deficiency': 0.23370328744029223, 
+    #     'planter_skip': 0.045641331834785054, 
+    #     'weed_cluster': 0.19512152289969092
+    # }
     # ratio of black to white pixels in the labels
     val_masks = {
         'drydown': [674846434, 4806148096], 
