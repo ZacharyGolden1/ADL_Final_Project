@@ -52,7 +52,6 @@ def main():
     parser.add_argument("--lr", default=2e-5, type=float)
     parser.add_argument("--save_every", default=25, type=int)
 
-
     args = parser.parse_args()
 
     print("Arguments")
@@ -107,8 +106,7 @@ def main():
     loss_fn = torch.nn.L1Loss()
     # loss_fn = loss.weighted_l1_loss
 
-    def acc_fn(outputs, labels):
-        return torch.zeros(1)
+    acc_fn = loss.mIoU
 
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 
@@ -124,7 +122,6 @@ def main():
     )
 
     # Start training with help from engine.py
-    # TODO: periodically save
     engine.train(
         model=model,
         train_dataloader=train_dataloader,

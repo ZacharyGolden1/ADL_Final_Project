@@ -6,6 +6,7 @@ from typing import Tuple, Dict, List
 from time import time
 import torch
 from tqdm import tqdm
+import utils
 import wandb
 
 
@@ -45,7 +46,7 @@ def train_step(
         optimizer.step()
 
         # log within batch loss
-        if (i + 1) % 10 == 0:
+        if (batch + 1) % 10 == 0:
             wandb.log(
                 {
                     "loss_during_epoch": loss.item(),
@@ -76,7 +77,7 @@ def test_step(
     test_loss, test_acc = 0.0, 0.0
 
     with torch.no_grad():
-        for batch, (images, labels) in enumerate(dataloader):
+        for _, (images, labels) in enumerate(dataloader):
             images, labels = images.to(device), labels.to(device)
 
             outputs = model(images)
@@ -118,6 +119,8 @@ def train(
         "test_acc": [],
     }
 
+    model.to(device)
+
     for epoch in tqdm(range(epochs)):
         train_loss, train_acc = train_step(
             model, train_dataloader, loss_fn, acc_fn, optimizer, device
@@ -140,10 +143,8 @@ def train(
         )
 
         if (epoch + 1) % save_every == 0:
-            utils.save(
-                model=model,
-                target_dir=save_dir,
-                model_name=f"model_{epoch+1}.pt"
+            utils.save_model(
+                model=model, target_dir=save_dir, model_name=f"model_{epoch+1}.pt"
             )
 
     return results
