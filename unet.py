@@ -265,20 +265,6 @@ class Unet(nn.Module):
 
         block_class = partial(ResnetBlock, groups=resnet_block_groups)
 
-        # time embeddings
-
-        time_dim = dim * 4
-
-        sinu_pos_emb = SinusoidalPosEmb(dim)
-        fourier_dim = dim
-
-        self.time_mlp = nn.Sequential(
-            sinu_pos_emb,
-            nn.Linear(fourier_dim, time_dim),
-            nn.GELU(),
-            nn.Linear(time_dim, time_dim),
-        )
-
         # layers
 
         self.downs = nn.ModuleList([])
@@ -291,8 +277,8 @@ class Unet(nn.Module):
             self.downs.append(
                 nn.ModuleList(
                     [
-                        block_class(dim_in, dim_in, time_emb_dim=time_dim),
-                        block_class(dim_in, dim_in, time_emb_dim=time_dim),
+                        block_class(dim_in, dim_in),
+                        block_class(dim_in, dim_in),
                         Residual(PreNorm(dim_in, LinearAttention(dim_in))),
                         (
                             Downsample(dim_in, dim_out)
@@ -304,9 +290,9 @@ class Unet(nn.Module):
             )
 
         mid_dim = dims[-1]
-        self.mid_block1 = block_class(mid_dim, mid_dim, time_emb_dim=time_dim)
+        self.mid_block1 = block_class(mid_dim, mid_dim)
         self.mid_attn = Residual(PreNorm(mid_dim, Attention(mid_dim)))
-        self.mid_block2 = block_class(mid_dim, mid_dim, time_emb_dim=time_dim)
+        self.mid_block2 = block_class(mid_dim, mid_dim)
 
         for ind, (dim_in, dim_out) in enumerate(reversed(in_out)):
             is_last = ind == (len(in_out) - 1)
@@ -314,8 +300,8 @@ class Unet(nn.Module):
             self.ups.append(
                 nn.ModuleList(
                     [
-                        block_class(dim_out + dim_in, dim_out, time_emb_dim=time_dim),
-                        block_class(dim_out + dim_in, dim_out, time_emb_dim=time_dim),
+                        block_class(dim_out + dim_in, dim_out),
+                        block_class(dim_out + dim_in, dim_out),
                         Residual(PreNorm(dim_out, LinearAttention(dim_out))),
                         (
                             Upsample(dim_out, dim_in)
@@ -329,7 +315,7 @@ class Unet(nn.Module):
         default_out_dim = channels
         self.out_dim = default(out_dim, default_out_dim)
 
-        self.final_res_block = block_class(dim * 2, dim, time_emb_dim=time_dim)
+        self.final_res_block = block_class(dim * 2, dim)
         self.final_conv = nn.Conv2d(dim, self.out_dim, 1)
 
         # Sigmoid to push the output to [0, 1]

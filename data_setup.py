@@ -1,6 +1,11 @@
+"""
+Datasets and DataLoaders for the Agriculture Vision dataset.
+"""
+
 import os
 import pandas as pd
 import torch
+from typing import Optional, Callable
 from torchvision.io import read_image, ImageReadMode
 from torchvision.datasets import VisionDataset
 from torchvision.transforms import v2
@@ -8,7 +13,21 @@ from torch.utils.data import DataLoader
 
 
 class AgricultureVisionDataset(VisionDataset):
-    def __init__(self, root, transforms=None, transform=None, target_transform=None):
+    """
+    Agriculture Vision dataset.
+
+    Items:
+        - image : H * W * 4 (RGB + NIR)
+        - label : H * W * C (C classes based on labels selected)
+    """
+
+    def __init__(
+        self,
+        root: str,
+        transforms: Optional[Callable] = None,  # transform image, label pair
+        transform: Optional[Callable] = None,  # transform image
+        target_transform: Optional[Callable] = None,  # transform label
+    ):
         super().__init__(root, transforms, transform, target_transform)
 
         self.root = root
@@ -63,11 +82,54 @@ class AgricultureVisionDataset(VisionDataset):
         return image, labels
 
 
+def create_dataloaders(
+    train_dir: str,
+    test_dir: str,
+    transform: Optional[Callable] = None,
+    target_transform: Optional[Callable] = None,
+    batch_size: int = 64,
+    shuffle: bool = True,
+    dataset_size: Optional[int] = None,
+):
+    """
+    Create dataloaders for the Agriculture Vision dataset.
+    Returns: train_loader, test_loader
+    """
+
+    train_dataset = AgricultureVisionDataset(
+        train_dir, transform=transform, target_transform=target_transform
+    )
+    if dataset_size:
+        train_dataset = torch.utils.data.Subset(train_dataset, range(0, dataset_size))
+    train_loader = DataLoader(
+        train_dataset,
+        batch_size=batch_size,
+        shuffle=shuffle,
+        pin_memory=True,
+        drop_last=True,  # drop last batch if it is not full
+    )
+
+    test_dataset = AgricultureVisionDataset(
+        test_dir, transform=transform, target_transform=target_transform
+    )
+    if dataset_size:
+        test_dataset = torch.utils.data.Subset(test_dataset, range(0, dataset_size))
+    test_loader = DataLoader(
+        test_dataset,
+        batch_size=batch_size,
+        shuffle=shuffle,
+        pin_memory=True,
+        drop_last=True,
+    )
+
+    return train_loader, test_loader
+
+
 if __name__ == "__main__":
-    transform = v2.Compose(
+    invert_transform = v2.Compose(
         [v2.ToImage(), v2.ToDtype(torch.float32, scale=True), v2.functional.invert]
     )
-    target_transform = v2.Compose(
+    clamp_target_transform = v2.Compose(
         [
             v2.ToImage(),
             v2.ToDtype(torch.float32, scale=True),
@@ -76,8 +138,8 @@ if __name__ == "__main__":
     )
     dataset = AgricultureVisionDataset(
         "./data/Agriculture-Vision-2021/train/",
-        transform=transform,
-        target_transform=target_transform,
+        transform=invert_transform,
+        target_transform=clamp_target_transform,
     )
     data_loader = DataLoader(dataset, batch_size=4, shuffle=True)
     imgs, labels = next(iter(data_loader))
@@ -95,5 +157,5 @@ if __name__ == "__main__":
     plt.show()
 
     for i in range(5):
-        imgs, labels = next(iter(data_loader))
-        print(torch.max(labels))
+        imgs, ls = next(iter(data_loader))
+        print(torch.max(ls))

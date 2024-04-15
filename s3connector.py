@@ -1,4 +1,4 @@
-from s3torchconnector import S3MapDataset, S3IterableDataset
+from s3torchconnector import S3IterableDataset
 from PIL import Image
 import torchvision
 
