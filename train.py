@@ -40,7 +40,7 @@ def main():
         type=str,
         help="The path to load a pre-trained model.",
     )
-    parser.add_argument("--dataset_size", default=1024, type=int)
+    parser.add_argument("--dataset_size", default=None, type=int)
     parser.add_argument(
         "--epochs",
         default=50,

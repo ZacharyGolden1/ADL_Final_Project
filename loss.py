@@ -102,7 +102,6 @@ def mIoU(outputs: torch.Tensor, labels: torch.Tensor):
     # be with the BATCH x 1 x H x W shape
     outputs = outputs.squeeze(1)  # BATCH x 1 x H x W => BATCH x H x W
     labels = labels.squeeze(1)  # BATCH x 1 x H x W => BATCH x H x W
-    # import pdb;pdb.set_trace()
 
     intersection = (
         (torch.round(outputs).int() & torch.round(labels).int()).float().sum((1, 2))
@@ -111,14 +110,14 @@ def mIoU(outputs: torch.Tensor, labels: torch.Tensor):
         (torch.round(outputs).int() | torch.round(labels).int()).float().sum((1, 2))
     )  # Will be zzero if both are 0
 
-    iou = (intersection + SMOOTH) / (
+    iou = 0.5 * (intersection + SMOOTH) / (
         union + SMOOTH
     )  # We smooth our devision to avoid 0/0
 
-    thresholded = (
-        torch.clamp(20 * (iou - 0.5), 0, 10).ceil() / 10
-    )  # This is equal to comparing with thresolds
+    # thresholded = (
+    #     torch.clamp(20 * (iou - 0.5), 0, 10).ceil() / 10
+    # )  # This is equal to comparing with thresolds
 
     return (
-        thresholded.mean()
+        iou.mean()
     )  # Or thresholded.mean() if you are interested in average across the batch

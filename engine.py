@@ -27,6 +27,7 @@ def train_step(
 
     train_loss, train_acc = 0.0, 0.0
 
+    optimizer.zero_grad()
     for batch, (images, labels) in enumerate(dataloader):
         batch_start = time()
         images, labels = images.to(device), labels.to(device)
@@ -38,12 +39,10 @@ def train_step(
             acc = acc_fn(outputs, labels)
             train_acc += acc.item()
 
-        optimizer.zero_grad()
         back_start = time()
         loss.backward()
         back_time = time() - back_start
         batch_time = time() - batch_start
-        optimizer.step()
 
         # log within batch loss
         if (batch + 1) % 10 == 0:
@@ -56,6 +55,7 @@ def train_step(
             )
 
         train_loss += loss.item()
+    optimizer.step()
 
     return train_loss / len(dataloader), train_acc / len(dataloader)
 
