@@ -114,6 +114,7 @@ def main():
     wandb.init(
         entity="slumba-cmu",
         project="agriculture-vision-adl",
+        name=args.save_dir,
         config={
             "model": model.__class__.__name__,
             "loss": loss_fn.__class__.__name__,
