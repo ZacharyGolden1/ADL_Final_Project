@@ -103,8 +103,8 @@ def main():
         model.load_state_dict(torch.load(args.load_path))
 
     # Set loss and optimizer
-    loss_fn = torch.nn.L1Loss()
-    # loss_fn = loss.weighted_l1_loss
+    # loss_fn = torch.nn.L1Loss()
+    loss_fn = loss.weighted_l1_loss
 
     acc_fn = loss.mIoU
 

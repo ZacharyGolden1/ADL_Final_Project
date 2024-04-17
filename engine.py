@@ -88,6 +88,16 @@ def test_step(
             acc = acc_fn(outputs, labels)
             test_acc += acc.item()
 
+            wandb.log(
+                {
+                    "val_loss_per_batch": loss,
+                    "val_acc": acc,
+                    "pred_masks": [wandb.Image(p) for p in outputs],
+                    "true_masks": [wandb.Image(p) for p in labels],
+                    "images": [wandb.Image(i) for i in images],
+                }
+            )
+
     return test_loss / len(dataloader), test_acc / len(dataloader)
 
 
