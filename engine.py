@@ -88,18 +88,6 @@ def test_step(
             acc = acc_fn(outputs, labels)
             test_acc += acc.item()
 
-            wandb.log(
-                {
-                    "val_loss_per_batch": loss,
-                    "val_acc": acc,
-                    "pred_masks": [wandb.Image(p) for p in outputs],
-                    "true_masks": [wandb.Image(p) for p in labels],
-                    "images": [wandb.Image(i) for i in images],
-                }
-            )
-
-            break
-
     return test_loss / len(dataloader), test_acc / len(dataloader)
 
 
@@ -166,6 +154,22 @@ def visualize(
     model: torch.nn.Module, dataloader: torch.utils.data.DataLoader, device: torch
 ):
     """
-    Visualize outputs of the model
+    Visualize outputs of the model.
+    Only does one batch of data
     """
-    raise NotImplementedError
+    model.eval()
+
+    with torch.no_grad():
+        for _, (images, labels) in enumerate(dataloader):
+            images, labels = images.to(device), labels.to(device)
+            outputs = model(images)
+
+            wandb.log(
+                {
+                    "pred_masks": [wandb.Image(p) for p in outputs],
+                    "true_masks": [wandb.Image(p) for p in labels],
+                    "images": [wandb.Image(i) for i in images],
+                }
+            )
+
+            break

@@ -48,10 +48,9 @@ def main():
         help="The number of iterations for training.",
     )
     parser.add_argument(
-        "--train", 
-        default=True, 
-        type=bool,
-        help="bool of whether to train or test, defaults to train"
+        "--visualize",
+        action="store_true",
+        help="whether to visualize the results of the model",
     )
     parser.add_argument("--image_size", default=128, type=int)
     parser.add_argument("--batch_size", default=32, type=int)
@@ -116,20 +115,20 @@ def main():
 
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 
-    # initialize wandb
-    wandb.init(
-        entity="slumba-cmu",
-        project="agriculture-vision-adl",
-        name=args.save_dir,
-        config={
-            "model": model.__class__.__name__,
-            "loss": loss_fn.__class__.__name__,
-            **vars(args),
-        },
-    )
-
     # Start training with help from engine.py
-    if args.train:
+    if not args.visualize:
+        # initialize wandb
+        wandb.init(
+            entity="slumba-cmu",
+            project="agriculture-vision-adl",
+            name=args.save_dir,
+            config={
+                "model": model.__class__.__name__,
+                "loss": loss_fn.__class__.__name__,
+                **vars(args),
+            },
+        )
+
         engine.train(
             model=model,
             train_dataloader=train_dataloader,
@@ -150,11 +149,23 @@ def main():
             model_name="model.pt",
         )
     else:
-        engine.test(
+        assert args.load_path, "You must provide a model path to visualize."
+
+        # initialize wandb
+        wandb.init(
+            entity="slumba-cmu",
+            project="agriculture-vision-adl",
+            name=args.load_path + "-vis",
+            config={
+                "model": model.__class__.__name__,
+                "loss": loss_fn.__class__.__name__,
+                **vars(args),
+            },
+        )
+
+        engine.visualize(
             model=model,
             dataloader=test_dataloader,
-            loss_fn=loss_fn,
-            acc_fn=acc_fn,
             device=device,
         )
 
