@@ -47,6 +47,12 @@ def main():
         type=int,
         help="The number of iterations for training.",
     )
+    parser.add_argument(
+        "--train", 
+        default=True, 
+        type=bool,
+        help="bool of whether to train or test, defaults to train"
+    )
     parser.add_argument("--image_size", default=128, type=int)
     parser.add_argument("--batch_size", default=32, type=int)
     parser.add_argument("--lr", default=2e-5, type=float)
@@ -123,25 +129,34 @@ def main():
     )
 
     # Start training with help from engine.py
-    engine.train(
-        model=model,
-        train_dataloader=train_dataloader,
-        test_dataloader=test_dataloader,
-        loss_fn=loss_fn,
-        acc_fn=acc_fn,
-        optimizer=optimizer,
-        epochs=args.epochs,
-        device=device,
-        save_every=args.save_every,
-        save_dir=args.save_dir,
-    )
+    if args.train:
+        engine.train(
+            model=model,
+            train_dataloader=train_dataloader,
+            test_dataloader=test_dataloader,
+            loss_fn=loss_fn,
+            acc_fn=acc_fn,
+            optimizer=optimizer,
+            epochs=args.epochs,
+            device=device,
+            save_every=args.save_every,
+            save_dir=args.save_dir,
+        )
 
-    # Save the model with help from utils.py
-    utils.save_model(
-        model=model,
-        target_dir=args.save_dir,
-        model_name="model.pt",
-    )
+        # Save the model with help from utils.py
+        utils.save_model(
+            model=model,
+            target_dir=args.save_dir,
+            model_name="model.pt",
+        )
+    else:
+        engine.test(
+            model=model,
+            dataloader=test_dataloader,
+            loss_fn=loss_fn,
+            acc_fn=acc_fn,
+            device=device,
+        )
 
 
 main()

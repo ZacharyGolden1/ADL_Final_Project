@@ -1,5 +1,4 @@
 investigate whether drop_last is causes issues with small dataset tests
-visualization code
 fix miou
 multiclass
 

@@ -98,6 +98,8 @@ def test_step(
                 }
             )
 
+            break
+
     return test_loss / len(dataloader), test_acc / len(dataloader)
 
 
