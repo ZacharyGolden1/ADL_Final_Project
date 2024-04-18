@@ -98,7 +98,7 @@ def weighted_cross_entropy_loss(pred, labels):
         0.010024255566062403,
     ])
     pred = pred.unsqueeze(1)
-    labels = labels.unsqueeze(0)
+    labels = labels.unsqueeze(1)
 
     loss = nn.BCEWithLogitsLoss(weight=weights)
     return loss(pred, labels)
