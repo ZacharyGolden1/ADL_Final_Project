@@ -100,14 +100,14 @@ def weighted_cross_entropy_loss(pred, labels):
     pred = pred.unsqueeze(1)
     labels = labels.unsqueeze(0)
 
-    loss = nn.CrossEntropyLoss(weights=weights)
+    loss = nn.BCEWithLogitsLoss(weight=weights)
     return loss(pred, labels)
 
 def cross_entropy_loss(pred, labels):
     pred = pred.unsqueeze(1)
     labels = labels.unsqueeze(1)
 
-    loss = nn.CrossEntropyLoss()
+    loss = nn.BCEWithLogitsLoss()
     return loss(pred, labels)
 
 # accuracy metric
@@ -117,9 +117,9 @@ SMOOTH = 1e-6
 def mIoU(outputs: torch.Tensor, labels: torch.Tensor):
     # You can comment out this line if you are passing tensors of equal shape
     # But if you are passing output from UNet or something it will most probably
-    # be with the BATCH x 1 x H x W shape
-    outputs = outputs.squeeze(1)  # BATCH x 1 x H x W => BATCH x H x W
-    labels = labels.squeeze(1)  # BATCH x 1 x H x W => BATCH x H x W
+    # be with the BATCH x C x H x W shape
+    # outputs = outputs.squeeze(1)  # BATCH x C x H x W => BATCH x H x W
+    # labels = labels.squeeze(1)  # BATCH x C x H x W => BATCH x H x W
 
     intersection = (
         (torch.round(outputs).int() & torch.round(labels).int()).float().sum((1, 2))

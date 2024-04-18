@@ -45,7 +45,7 @@ def train_step(
         batch_time = time() - batch_start
 
         # log within batch loss
-        if (batch + 1) % 1 == 0:
+        if (batch + 1) % 10 == 0:
             wandb.log(
                 {
                     "loss_during_epoch": loss.item(),
