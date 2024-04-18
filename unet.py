@@ -231,13 +231,15 @@ class Attention(nn.Module):
         out = rearrange(out, "b h (x y) d -> b (h d) x y", x=h, y=w)
         return self.to_out(out)
 
+
 # Loss
 def custom_l1_loss(output, target):
     # L1 loss with ratios
-        # check where the target comes from and see what the ratio is for that 
-        # class
+    # check where the target comes from and see what the ratio is for that
+    # class
     loss = torch.mean((output - target))
     return loss
+
 
 # model
 class Unet(nn.Module):
@@ -356,4 +358,5 @@ class Unet(nn.Module):
         x = self.final_res_block(x)
         x = self.final_conv(x)
 
-        return self.sigmoid(x)
+        x = self.sigmoid(x)
+        return x.unsqueeze(1)

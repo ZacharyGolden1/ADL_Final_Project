@@ -43,15 +43,15 @@ class AgricultureVisionDataset(VisionDataset):
 
         # downsample for baseline
         self.labels = (
-            # "double_plant",
-            # "nutrient_deficiency",
-            # "water",
+            "double_plant",
+            "nutrient_deficiency",
+            "water",
             "drydown",
-            # "planter_skip",
-            # "waterway",
-            # "endrow",
-            # "storm_damage",
-            # "weed_cluster",
+            "planter_skip",
+            "waterway",
+            "endrow",
+            "storm_damage",
+            "weed_cluster",
         )
 
     def __len__(self):
@@ -66,6 +66,7 @@ class AgricultureVisionDataset(VisionDataset):
             label = os.path.join(self.img_labels, lab, self.imgs.iloc[idx, 0] + ".png")
             labels.append(read_image(label))
         labels = torch.stack([item.squeeze() for item in labels])
+        labels = labels.unsqueeze(0)
 
         mask_path = os.path.join(self.masks, self.imgs.iloc[idx, 0] + ".png")
         mask = read_image(mask_path, ImageReadMode.GRAY)
