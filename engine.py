@@ -45,7 +45,7 @@ def train_step(
         batch_time = time() - batch_start
 
         # log within batch loss
-        if (batch + 1) % 10 == 0:
+        if (batch + 1) % 1 == 0:
             wandb.log(
                 {
                     "loss_during_epoch": loss.item(),
@@ -161,6 +161,9 @@ def visualize(
 
     with torch.no_grad():
         for _, (images, labels) in enumerate(dataloader):
+            # if torch.max(labels) < 1e-13:
+            #     # ignore empty masks
+            #     continue
             images, labels = images.to(device), labels.to(device)
             outputs = model(images)
 

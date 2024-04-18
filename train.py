@@ -100,7 +100,7 @@ def main():
     model = Unet(
         dim=64,
         dim_mults=[1, 2, 4, 8],
-        out_dim=1,
+        out_dim=9,
     ).to(device)
 
     if args.load_path:
@@ -108,8 +108,13 @@ def main():
         model.load_state_dict(torch.load(args.load_path))
 
     # Set loss and optimizer
+    # single class
     # loss_fn = torch.nn.L1Loss()
-    loss_fn = loss.weighted_l1_loss
+    # loss_fn = loss.weighted_l1_loss
+
+    # multiclass
+    loss_fn = loss.cross_entropy_loss
+    # loss_fn = loss.weighted_cross_entropy_loss
 
     acc_fn = loss.mIoU
 

@@ -91,6 +91,24 @@ def weighted_l1_loss(pred, labels):
 
     return torch.mean(loss)
 
+def weighted_cross_entropy_loss(pred, labels):
+    weights = torch.tensor([0.12317247690863742, 0.061726210257349874,
+        0.009456320604805063, 0.009079058473784792, 0.001896115091618074,
+        0.07422938980591301, 0.008462907558547275, 0.0018604548669457603,
+        0.010024255566062403,
+    ])
+    pred = pred.unsqueeze(1)
+    labels = labels.unsqueeze(0)
+
+    loss = nn.CrossEntropyLoss(weights=weights)
+    return loss(pred, labels)
+
+def cross_entropy_loss(pred, labels):
+    pred = pred.unsqueeze(1)
+    labels = labels.unsqueeze(1)
+
+    loss = nn.CrossEntropyLoss()
+    return loss(pred, labels)
 
 # accuracy metric
 SMOOTH = 1e-6
@@ -110,7 +128,7 @@ def mIoU(outputs: torch.Tensor, labels: torch.Tensor):
         (torch.round(outputs).int() | torch.round(labels).int()).float().sum((1, 2))
     )  # Will be zzero if both are 0
 
-    iou = 0.5 * (intersection + SMOOTH) / (
+    iou = (1/9) * (intersection + SMOOTH) / (
         union + SMOOTH
     )  # We smooth our devision to avoid 0/0
 
