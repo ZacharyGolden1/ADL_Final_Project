@@ -161,16 +161,30 @@ def visualize(
 
     with torch.no_grad():
         for _, (images, labels) in enumerate(dataloader):
-            # if torch.max(labels) < 1e-13:
-            #     # ignore empty masks
-            #     continue
             images, labels = images.to(device), labels.to(device)
             outputs = model(images)
+            # if torch.max(outputs) < 1e-2:
+            #     # ignore empty masks
+            #     continue
+            if outputs.shape[1] > 1:
+                for b in range(outputs.shape[0]):
+                    wandb.log(
+                        {
+                            "pred_masks": [wandb.Image(p) for p in outputs[b]],
+                            "true_masks": [wandb.Image(p) for p in labels[b]],
+                        }
+                    )
+
+            else:
+                wandb.log(
+                    {
+                        "pred_masks": [wandb.Image(p) for p in outputs],
+                        "true_masks": [wandb.Image(p) for p in labels],
+                    }
+                )
 
             wandb.log(
                 {
-                    "pred_masks": [wandb.Image(p) for p in outputs],
-                    "true_masks": [wandb.Image(p) for p in labels],
                     "images": [wandb.Image(i) for i in images],
                 }
             )

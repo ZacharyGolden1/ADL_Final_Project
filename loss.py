@@ -100,14 +100,14 @@ def weighted_cross_entropy_loss(pred, labels):
     pred = pred.unsqueeze(1)
     labels = labels.unsqueeze(1)
 
-    loss = nn.BCEWithLogitsLoss(weight=weights)
+    loss = nn.BCELoss(weight=weights)
     return loss(pred, labels)
 
 def cross_entropy_loss(pred, labels):
     pred = pred.unsqueeze(1)
     labels = labels.unsqueeze(1)
 
-    loss = nn.BCEWithLogitsLoss()
+    loss = nn.BCELoss()
     return loss(pred, labels)
 
 # accuracy metric
