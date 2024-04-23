@@ -4,6 +4,8 @@ Loss and accuracy metric implementations
 
 import torch
 from torch import nn
+import torch.nn.functional as F
+from torch.autograd import Variable
 
 
 def weighted_l1_loss(pred, labels):
@@ -109,6 +111,46 @@ def cross_entropy_loss(pred, labels):
 
     loss = nn.BCELoss()
     return loss(pred, labels)
+
+# modified from FAIR
+class FocalLoss(nn.Module):
+    def __init__(self, gamma=0, alpha=None, size_average=True):
+        super(FocalLoss, self).__init__()
+        self.gamma = gamma
+        self.alpha = alpha
+        if isinstance(alpha,(float,int,torch.long)): self.alpha = torch.Tensor([alpha,1-alpha])
+        if isinstance(alpha,list): self.alpha = torch.Tensor(alpha)
+        self.size_average = size_average
+
+    def forward(self, input, target):
+        input = input.view(input.size(0), input.size(1), -1)  # N,C,H,W => N,C,H*W
+        target = target.view(target.size(0), target.size(1), -1).long()  # N,C,H,W => N,C,H*W
+
+        losses = []
+        for c in range(input.size(1)):
+            input_c = input[:, c, :]  # N,H*W
+            target_c = target[:, c, :]  # N,H*W
+            
+            logpt = F.log_softmax(input_c, dim=1)
+            logpt = logpt.gather(1, target_c)
+            logpt = logpt.view(-1)
+            pt = Variable(logpt.data.exp())
+
+            if self.alpha is not None:
+                if self.alpha.type() != input.data.type():
+                    self.alpha = self.alpha.type_as(input.data)
+                at = self.alpha.gather(0, target_c.data.reshape(-1))
+                logpt = logpt * Variable(at)
+
+            loss = -1 * (1 - pt) ** self.gamma * logpt
+            losses.append(loss)
+        
+        loss = torch.stack(losses, dim=0).mean(dim=0)  # Average loss across channels
+        
+        if self.size_average:
+            return loss.mean()
+        else:
+            return loss.sum()
 
 # accuracy metric
 SMOOTH = 1e-6

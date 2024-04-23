@@ -113,8 +113,9 @@ def main():
     # loss_fn = loss.weighted_l1_loss
 
     # multiclass
-    loss_fn = loss.cross_entropy_loss
+    # loss_fn = loss.cross_entropy_loss
     # loss_fn = loss.weighted_cross_entropy_loss
+    loss_fn = loss.FocalLoss(gamma=2,alpha=0.5).forward
 
     acc_fn = loss.mIoU
 
