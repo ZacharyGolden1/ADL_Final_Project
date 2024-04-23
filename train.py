@@ -114,8 +114,8 @@ def main():
 
     # multiclass
     # loss_fn = loss.cross_entropy_loss
-    # loss_fn = loss.weighted_cross_entropy_loss
-    loss_fn = loss.FocalLoss(gamma=2,alpha=0.5).forward
+    loss_fn = loss.weightedCELoss(batch_size=args.batch_size, device=device).forward
+    # loss_fn = loss.FocalLoss(gamma=2,alpha=0.5).forward
 
     acc_fn = loss.mIoU
 

@@ -93,17 +93,27 @@ def weighted_l1_loss(pred, labels):
 
     return torch.mean(loss)
 
-def weighted_cross_entropy_loss(pred, labels):
-    weights = torch.tensor([0.12317247690863742, 0.061726210257349874,
-        0.009456320604805063, 0.009079058473784792, 0.001896115091618074,
-        0.07422938980591301, 0.008462907558547275, 0.0018604548669457603,
-        0.010024255566062403,
-    ])
-    pred = pred.unsqueeze(1)
-    labels = labels.unsqueeze(1)
+class weightedCELoss(nn.Module):
+    def __init__(self, batch_size=32, device="cuda"):
+        super(weightedCELoss, self).__init__()
+        self.device = device
+    
+    def forward(self, pred, labels):
+        weights = torch.tensor([0.12317247690863742, 0.061726210257349874,
+            0.009456320604805063, 0.009079058473784792, 0.001896115091618074,
+            0.07422938980591301, 0.008462907558547275, 0.0018604548669457603,
+            0.010024255566062403,
+        ])
+        # to convert the weights into compatible shape of (32, 1, 9)
+        batch_size = 32 
+        weights = weights.unsqueeze(0).unsqueeze(0).unsqueeze(-1).unsqueeze(-1)
+        weights = weights.expand(batch_size, 1, 9, 128, 128).to(self.device)
 
-    loss = nn.BCELoss(weight=weights)
-    return loss(pred, labels)
+        pred = pred.unsqueeze(1)
+        labels = labels.unsqueeze(1)
+
+        loss = nn.BCELoss(weight=weights)
+        return loss(pred, labels)
 
 def cross_entropy_loss(pred, labels):
     pred = pred.unsqueeze(1)
