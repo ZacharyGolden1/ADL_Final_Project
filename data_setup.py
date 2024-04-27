@@ -43,15 +43,15 @@ class AgricultureVisionDataset(VisionDataset):
 
         # downsample for baseline
         self.labels = (
-            # "double_plant",
-            # "nutrient_deficiency",
-            # "water",
+            "double_plant",
+            "nutrient_deficiency",
+            "water",
             "drydown",
-            # "planter_skip",
-            # "waterway",
-            # "endrow",
-            # "storm_damage",
-            # "weed_cluster",
+            "planter_skip",
+            "waterway",
+            "endrow",
+            "storm_damage",
+            "weed_cluster",
         )
 
     def __len__(self):

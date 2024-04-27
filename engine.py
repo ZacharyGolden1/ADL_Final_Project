@@ -17,6 +17,7 @@ def train_step(
     acc_fn: torch.nn.Module,
     optimizer: torch.optim.Optimizer,
     device: torch.device,
+    step_every: int = 1,
 ) -> Tuple[float, float]:
     """
     One epoch of training. Runs through entire dataset.
@@ -27,10 +28,12 @@ def train_step(
 
     train_loss, train_acc = 0.0, 0.0
 
-    optimizer.zero_grad()
     for batch, (images, labels) in enumerate(dataloader):
         batch_start = time()
         images, labels = images.to(device), labels.to(device)
+
+        if batch % step_every == 0:
+            optimizer.zero_grad()
 
         outputs = model(images)
         loss = loss_fn(outputs, labels)
@@ -42,6 +45,10 @@ def train_step(
         back_start = time()
         loss.backward()
         back_time = time() - back_start
+
+        if (batch + 1) % step_every == 0:
+            optimizer.step()
+
         batch_time = time() - batch_start
 
         # log within batch loss
@@ -55,7 +62,6 @@ def train_step(
             )
 
         train_loss += loss.item()
-    optimizer.step()
 
     return train_loss / len(dataloader), train_acc / len(dataloader)
 
@@ -102,6 +108,7 @@ def train(
     epochs: int,
     save_every: int,
     save_dir: str,
+    step_every: int = 1,
 ) -> Dict[str, List[float]]:
     """
     Train and test the model
@@ -123,7 +130,7 @@ def train(
 
     for epoch in tqdm(range(epochs)):
         train_loss, train_acc = train_step(
-            model, train_dataloader, loss_fn, acc_fn, optimizer, device
+            model, train_dataloader, loss_fn, acc_fn, optimizer, device, step_every
         )
         results["train_loss"].append(train_loss)
         results["train_acc"].append(train_acc)
@@ -163,11 +170,28 @@ def visualize(
         for _, (images, labels) in enumerate(dataloader):
             images, labels = images.to(device), labels.to(device)
             outputs = model(images)
+            # if torch.max(outputs) < 1e-2:
+            #     # ignore empty masks
+            #     continue
+            if outputs.shape[1] > 1:
+                for b in range(outputs.shape[0]):
+                    wandb.log(
+                        {
+                            "pred_masks": [wandb.Image(p) for p in outputs[b]],
+                            "true_masks": [wandb.Image(p) for p in labels[b]],
+                        }
+                    )
+
+            else:
+                wandb.log(
+                    {
+                        "pred_masks": [wandb.Image(p) for p in outputs],
+                        "true_masks": [wandb.Image(p) for p in labels],
+                    }
+                )
 
             wandb.log(
                 {
-                    "pred_masks": [wandb.Image(p) for p in outputs],
-                    "true_masks": [wandb.Image(p) for p in labels],
                     "images": [wandb.Image(i) for i in images],
                 }
             )

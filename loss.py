@@ -4,6 +4,8 @@ Loss and accuracy metric implementations
 
 import torch
 from torch import nn
+import torch.nn.functional as F
+from torch.autograd import Variable
 
 
 def weighted_l1_loss(pred, labels):
@@ -91,6 +93,74 @@ def weighted_l1_loss(pred, labels):
 
     return torch.mean(loss)
 
+class weightedCELoss(nn.Module):
+    def __init__(self, batch_size=32, device="cuda"):
+        super(weightedCELoss, self).__init__()
+        self.device = device
+    
+    def forward(self, pred, labels):
+        weights = torch.tensor([1 / 0.12317247690863742, 1 / 0.061726210257349874,
+            1 / 0.009456320604805063, 1 / 0.009079058473784792, 1 / 0.001896115091618074,
+            1 / 0.07422938980591301, 1 / 0.008462907558547275, 1 / 0.0018604548669457603,
+            1 / 0.010024255566062403,
+        ])
+        # to convert the weights into compatible shape of (32, 1, 9)
+        batch_size = 32 
+        weights = weights.unsqueeze(0).unsqueeze(0).unsqueeze(-1).unsqueeze(-1)
+        weights = weights.expand(batch_size, 1, 9, 128, 128).to(self.device)
+
+        pred = pred.unsqueeze(1)
+        labels = labels.unsqueeze(1)
+
+        loss = nn.BCELoss(weight=weights)
+        return loss(pred, labels)
+
+def cross_entropy_loss(pred, labels):
+    pred = pred.unsqueeze(1)
+    labels = labels.unsqueeze(1)
+
+    loss = nn.BCELoss()
+    return loss(pred, labels)
+
+# modified from FAIR
+class FocalLoss(nn.Module):
+    def __init__(self, gamma=0, alpha=None, size_average=True):
+        super(FocalLoss, self).__init__()
+        self.gamma = gamma
+        self.alpha = alpha
+        if isinstance(alpha,(float,int,torch.long)): self.alpha = torch.Tensor([alpha,1-alpha])
+        if isinstance(alpha,list): self.alpha = torch.Tensor(alpha)
+        self.size_average = size_average
+
+    def forward(self, input, target):
+        input = input.view(input.size(0), input.size(1), -1)  # N,C,H,W => N,C,H*W
+        target = target.view(target.size(0), target.size(1), -1).long()  # N,C,H,W => N,C,H*W
+
+        losses = []
+        for c in range(input.size(1)):
+            input_c = input[:, c, :]  # N,H*W
+            target_c = target[:, c, :]  # N,H*W
+            
+            logpt = F.log_softmax(input_c, dim=1)
+            logpt = logpt.gather(1, target_c)
+            logpt = logpt.view(-1)
+            pt = Variable(logpt.data.exp())
+
+            if self.alpha is not None:
+                if self.alpha.type() != input.data.type():
+                    self.alpha = self.alpha.type_as(input.data)
+                at = self.alpha.gather(0, target_c.data.reshape(-1))
+                logpt = logpt * Variable(at)
+
+            loss = -1 * (1 - pt) ** self.gamma * logpt
+            losses.append(loss)
+        
+        loss = torch.stack(losses, dim=0).mean(dim=0)  # Average loss across channels
+        
+        if self.size_average:
+            return loss.mean()
+        else:
+            return loss.sum()
 
 # accuracy metric
 SMOOTH = 1e-6
@@ -99,9 +169,9 @@ SMOOTH = 1e-6
 def mIoU(outputs: torch.Tensor, labels: torch.Tensor):
     # You can comment out this line if you are passing tensors of equal shape
     # But if you are passing output from UNet or something it will most probably
-    # be with the BATCH x 1 x H x W shape
-    outputs = outputs.squeeze(1)  # BATCH x 1 x H x W => BATCH x H x W
-    labels = labels.squeeze(1)  # BATCH x 1 x H x W => BATCH x H x W
+    # be with the BATCH x C x H x W shape
+    # outputs = outputs.squeeze(1)  # BATCH x C x H x W => BATCH x H x W
+    # labels = labels.squeeze(1)  # BATCH x C x H x W => BATCH x H x W
 
     intersection = (
         (torch.round(outputs).int() & torch.round(labels).int()).float().sum((1, 2))
@@ -110,7 +180,7 @@ def mIoU(outputs: torch.Tensor, labels: torch.Tensor):
         (torch.round(outputs).int() | torch.round(labels).int()).float().sum((1, 2))
     )  # Will be zzero if both are 0
 
-    iou = 0.5 * (intersection + SMOOTH) / (
+    iou = (1/9) * (intersection + SMOOTH) / (
         union + SMOOTH
     )  # We smooth our devision to avoid 0/0
 

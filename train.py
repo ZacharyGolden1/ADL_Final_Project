@@ -56,6 +56,7 @@ def main():
     parser.add_argument("--batch_size", default=32, type=int)
     parser.add_argument("--lr", default=2e-5, type=float)
     parser.add_argument("--save_every", default=25, type=int)
+    parser.add_argument("--step_every", default=1, type=int)
 
     args = parser.parse_args()
 
@@ -100,7 +101,7 @@ def main():
     model = Unet(
         dim=64,
         dim_mults=[1, 2, 4, 8],
-        out_dim=1,
+        out_dim=9,
     ).to(device)
 
     if args.load_path:
@@ -108,8 +109,14 @@ def main():
         model.load_state_dict(torch.load(args.load_path))
 
     # Set loss and optimizer
+    # single class
     # loss_fn = torch.nn.L1Loss()
-    loss_fn = loss.weighted_l1_loss
+    # loss_fn = loss.weighted_l1_loss
+
+    # multiclass
+    # loss_fn = loss.cross_entropy_loss
+    # loss_fn = loss.weightedCELoss(batch_size=args.batch_size, device=device).forward
+    loss_fn = loss.FocalLoss(gamma=2, alpha=0.5).forward
 
     acc_fn = loss.mIoU
 
@@ -140,6 +147,7 @@ def main():
             device=device,
             save_every=args.save_every,
             save_dir=args.save_dir,
+            step_every=args.step_every,
         )
 
         # Save the model with help from utils.py
