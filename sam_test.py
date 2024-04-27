@@ -35,3 +35,5 @@ for mask in outputs["masks"]:
     show_mask(mask, ax=ax, random_color=True)
 plt.axis("off")
 plt.savefig("sam_mask.png")
+
+breakpoint()
