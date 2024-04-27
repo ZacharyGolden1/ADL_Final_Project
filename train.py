@@ -56,6 +56,7 @@ def main():
     parser.add_argument("--batch_size", default=32, type=int)
     parser.add_argument("--lr", default=2e-5, type=float)
     parser.add_argument("--save_every", default=25, type=int)
+    parser.add_argument("--step_every", default=1, type=int)
 
     args = parser.parse_args()
 
@@ -146,6 +147,7 @@ def main():
             device=device,
             save_every=args.save_every,
             save_dir=args.save_dir,
+            step_every=args.step_every,
         )
 
         # Save the model with help from utils.py
