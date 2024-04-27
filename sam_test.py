@@ -8,14 +8,14 @@ from data_setup import AgricultureVisionDataset
 val_dataset = AgricultureVisionDataset(
     root="./data/Agriculture-Vision-2021/val",
     transform=v2.ToPILImage(),
-    target_transform=None,
+    target_transform=v2.ToPILImage(),
 )
 
 generator = pipeline(model="facebook/sam-vit-base", task="mask-generation")
 
 DATA_PATH = "./data/"
 
-image, _ = val_dataset[0]
+image, true_mask = val_dataset[0]
 outputs = generator(image)
 
 
@@ -36,4 +36,6 @@ for mask in outputs["masks"]:
 plt.axis("off")
 plt.savefig("sam_mask.png")
 
-breakpoint()
+# save image and true mask as png
+image.save("image.png")
+true_mask.save("true_mask.png")
